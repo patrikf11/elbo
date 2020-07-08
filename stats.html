@@ -5,6 +5,20 @@
 <script>
 $().ready(function() {
    $("#text").html("Text added by jQuery code.");
+   
+    $.ajax({
+      url: 'https://api.thingspeak.com/channels/1095413/feeds.json?results=2',
+      type: 'GET',
+      data: {
+        format: 'json'
+      },
+      success: function(response) {
+        alert(response);
+      },
+      error: function() {
+        $('#errors').text("There was an error processing your request. Please try again.");
+      }
+    });
 });
 </script>
 </header>
