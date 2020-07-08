@@ -8,11 +8,13 @@ $().ready(function() {
    
     $.ajax({
       url: 'https://api.thingspeak.com/channels/1095413/feeds.json?results=2',
+       crossDomain:true,
       type: 'GET',
       data: {
         format: 'json'
       },
       success: function(response) {
+         dir(response);
         alert(response);
       },
       error: function() {
