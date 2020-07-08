@@ -4,17 +4,16 @@
 
 <script>
 $().ready(function() {
-   $("#text").html("Text added by jQuery code.");
+   $("#text").html("Jquery is loaded...");
    
     $.ajax({
-      url: 'https://api.thingspeak.com/channels/1095413/feeds.json?results=2',
+      url: 'https://api.thingspeak.com/channels/1095413/feeds.csv?results=2',
        crossDomain:true,
       type: 'GET',
       data: {
-        format: 'json'
+        format: 'text'
       },
       success: function(response) {
-         dir(response);
         alert(response);
       },
       error: function() {
