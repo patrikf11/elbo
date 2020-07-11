@@ -4,65 +4,134 @@
 <title>ELbo work in progress...</title>
 <link href="./css/basic.css" rel="stylesheet" type="text/css">
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.canvaswrapper.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.colorhelpers.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.flot.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.flot.saturated.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.flot.browser.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.flot.drawSeries.js"></script>
-<script language="javascript" type="text/javascript" src="./js/jquery.flot.uiConstants.js"></script>	
+<script language="javascript" type="text/javascript" src="./js/jquery.canvaswrapper.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.colorhelpers.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.saturated.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.browser.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.drawSeries.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.uiConstants.min.js"></script>	
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.time.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.axislabels.min.js"></script>
+<script language="javascript" type="text/javascript" src="./js/jquery.flot.legend.min.js"></script>
+
+<script language="javascript" type="text/javascript" src="../feed.json"></script>	
 
 <script>
 $().ready(function() {
-   $("#text").html("Jquery is loaded...");
-   
-    $.ajax({
-      url: 'https://api.thingspeak.com/channels/1095413/feeds.csv?results=2',
-       crossDomain:true,
-      type: 'GET',
-      data: {
-        format: 'text'
-      },
-      success: function(response) {
-        alert(response);
-      },
-      error: function() {
-        $('#errors').text("There was an error processing your request. Please try again.");
-      }
-    });
-
-    	var d1 = [];
-	for (var i = 0; i < 14; i += 0.5) {
-		d1.push([i, Math.sin(i)]);
+	function getFeed(url){
+		// get the ve.direct feed 
+		var deferred = $.Deferred();
+		$.ajax({
+			url: url, crossDomain:true, type: 'GET',
+			data: { format: 'json' },
+			success: function(response) {deferred.resolve(response);},
+			error: function() {deferred.reject("There was an error processing your request.");}
+		});
+		return deferred.promise();
 	}
-	var d2 = [[0, 3], [4, 8], [8, 5], [9, 13]];
-	// A null signifies separate line segments
-	var d3 = [[0, 12], [7, 12], null, [7, 2.5], [12, 2.5]];
-	$.plot("#placeholder", [ d1, d2, d3 ]);
-	// Add the Flot version string to the footer
-	$("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
+
+	function parseSerie(data, x, y, scale){
+		var d=[];
+		$.each(data.feeds, function( index, value ) {
+			d.push([new Date(value[x]).getTime(),value[y]/scale]);
+		});
+		return d.slice();
+	}
+
+	function parseMarkings(data,x,y){
+		var dc,vc,d,v,
+			colors=["#f6f6f6","lightblue","#FFD995","lightgreen"],
+			markings=[];
+		$.each(data.feeds, function( index, value ) {
+			dc = new Date(value[x]).getTime();
+			vc = value[y];
+			
+			if (index==0){
+			 d = new Date(value[x]).getTime();
+			 v = value[y];
+			}
+			if (v != vc){
+				markings.push({"cs":v, "color":colors[v], "xaxis":{"from":d, "to":dc}});
+				v=vc;
+				d=dc;
+			}
+		});
+		markings.push({"cs":v, "color":colors[v], "xaxis":{"from":d}});
+		return markings;
+	}
+
+	function decorate($plot, $placeholder, markings){
+		var labels=["Off","Bulk","Abs","Float"],
+		yoffs = $plot.getAxes().yaxis.datamin;
+		
+		$.each(markings, function(index, m){
+			if (!m.xaxis.to || !m.xaxis.from) return;  // dont bother to write for unceratin values
+			if ((m.xaxis.to - m.xaxis.from) < 1200000) return; // dont bother writing labels for short intervals
+			var o = $plot.pointOffset({x:m.xaxis.from,y:yoffs});
+			$placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + o.top + "px;color:#666;font-size:smaller'>"+labels[m.cs]+"</div>");
+		});
+	}
+
+	function getTimeSpan(data,t){
+		var tmin,tmax,
+		    months=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    	;
+		$.each(data.feeds, function( index, value ) {
+			if (index==0) tmin=new Date(value[t]);
+			tmax=new Date(value[t]);
+		});
+		var dmin=tmin.getDate(),dmax=tmax.getDate(),
+			mmin=months[tmin.getMonth()],mmax=months[tmax.getMonth()];
+
+		if (mmin==mmax && dmin==dmax) 		
+			return mmin + ' ' + dmin ;
+		if (mmin==mmax && dmin!=dmax)
+			return mmin + ' ' + dmin +' - ' + dmax;
+		return mmin + ' ' + dmin +' - ' + mmax + ' ' + dmax;		
+	}
+
+	
+	function makePlot(feed){
+		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot;
+		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000)});
+		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1)});	
+		markings = parseMarkings(feed,"created_at","field3");
+
+		$plot = $.plot($placeholder, dataSeries, 
+					   {series:{lines:{lineWidth:3}},
+						grid:{markings:markings},
+						xaxis: { mode: "time",
+					  			 timeBase: "milliseconds",
+								 timeformat: "%H:%M",
+								 axisLabel: "Timespan: " + getTimeSpan(feed,"created_at")
+								},
+						yaxes: [{axisLabel:"Voltage (V)"}, {axisLabel:"Current (A)", position: "right"} ]		
+						});
+		decorate($plot,$placeholder,markings);
+	}
+	//makePlot(testFeed);
+	
+	$.when(getFeed('https://api.thingspeak.com/channels/1095413/feeds.json?results=200')).done(function(value) {
+    makePlot(value);
+	});
+	
+	$("#footer").prepend("Powered by ESP8266 <br> Thingspeak <br> GitHub Pages <br> Flot " + $.plot.version);				
 });	
 </script>
 </header>
 <body>
-	<div id="text"></div>
+	<div id="title" style="text-align: center;">
+		Elbo 
+	</div>
    
    	<div id="content">
-
 		<div class="demo-container">
 			<div id="placeholder" class="demo-placeholder"></div>
 		</div>
-
-		<p>You don't have to do much to get an attractive plot.  Create a placeholder, make sure it has dimensions (so Flot knows at what size to draw the plot), then call the plot function with your data.</p>
-
-		<p>The axes are automatically scaled.</p>
-
+		<div>
 	</div>
-
-	<div id="footer">
-		Copyright &copy; 2007 - 2014 IOLA and Ole Laursen
-	</div>
-
+	<div id="footer"></div>
 
 </body>
 </html>
