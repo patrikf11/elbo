@@ -1,4 +1,4 @@
 ## Elbo
-A dyi approch for ve.direct cloud monitoring
+A diy approach for ve.direct cloud monitoring
 
 
