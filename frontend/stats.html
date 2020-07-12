@@ -31,10 +31,13 @@ $().ready(function() {
 		return deferred.promise();
 	}
 
-	function parseSerie(data, x, y, scale){
-		var d=[];
+	function parseSerie(data, x, y, scale,timeLimit){
+		var d=[], now=new Date(),xdt;
 		$.each(data.feeds, function( index, value ) {
-			d.push([new Date(value[x]).getTime(),value[y]/scale]);
+			xdt=new Date(value[x]).getTime();
+			if (xdt > timeLimit) {
+				d.push([xdt,value[y]/scale]);
+			}	
 		});
 		return d.slice();
 	}
@@ -93,9 +96,10 @@ $().ready(function() {
 
 	
 	function makePlot(feed){
-		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot;
-		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000)});
-		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000)});	
+		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot,
+		limit=(new Date()).getTime()-(36*60*60*1000);
+		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000,limit)});
+		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000,limit)});	
 		markings = parseMarkings(feed,"created_at","field3");
 
 		$plot = $.plot($placeholder, dataSeries, 
