@@ -41,7 +41,7 @@ $().ready(function() {
 
 	function parseMarkings(data,x,y){
 		var dc,vc,d,v,
-			colors=["#f6f6f6","lightblue","#FFD995","lightgreen"],
+			colors=["#f6f6f6","#f6f6f6","#eb3434","lightblue","#FFD995","lightgreen"],
 			markings=[];
 		$.each(data.feeds, function( index, value ) {
 			dc = new Date(value[x]).getTime();
@@ -62,7 +62,7 @@ $().ready(function() {
 	}
 
 	function decorate($plot, $placeholder, markings){
-		var labels=["Off","Bulk","Abs","Float"],
+		var labels=["Off","Off","Err","Bulk","Abs","Float"],
 		yoffs = $plot.getAxes().yaxis.datamin;
 		
 		$.each(markings, function(index, m){
