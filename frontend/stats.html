@@ -95,7 +95,7 @@ $().ready(function() {
 	function makePlot(feed){
 		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot;
 		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000)});
-		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1)});	
+		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000)});	
 		markings = parseMarkings(feed,"created_at","field3");
 
 		$plot = $.plot($placeholder, dataSeries, 
