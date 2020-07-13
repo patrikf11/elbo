@@ -53,15 +53,14 @@ $().ready(function() {
 		$.each(data.feeds, function( index, value ) {
 			dc = parseZuluDate(value[x]);
 			vc = value[y];
-			
 			if (index==0){
-			 d = parseZuluDate(value[x]);
-			 v = value[y];
+			 d = dc;
+			 v = vc;
 			}
 			if (v != vc){
 				markings.push({"cs":v, "color":colors[v], "xaxis":{"from":d, "to":dc}});
-				v=vc;
 				d=dc;
+				v=vc;
 			}
 		});
 		markings.push({"cs":v, "color":colors[v], "xaxis":{"from":d}});
@@ -69,7 +68,7 @@ $().ready(function() {
 	}
 
 	function decorate($plot, $placeholder, markings){
-		var labels=["Off","Off","Err","Bulk","Abs","Float"],
+		var labels=["Off","Off","Err","Bulk","Abs","Float"],cs,
 		yoffs = $plot.getAxes().yaxis.datamin;
 		
 		$.each(markings, function(index, m){
@@ -78,16 +77,19 @@ $().ready(function() {
 			var o = $plot.pointOffset({x:m.xaxis.from,y:yoffs});
 			$placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + o.top + "px;color:#666;font-size:smaller'>"+labels[m.cs]+"</div>");
 		});
+
+		
 	}
 
-	function getTimeSpan(data,t){
+	function getTimeSpan(data,t,timeLimit){
 		var tmin,tmax,
-		    months=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		    months=['January', 'February', 'Mars', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     	;
 		$.each(data.feeds, function( index, value ) {
 			if (index==0) tmin=new Date(value[t]);
 			tmax=new Date(value[t]);
 		});
+		if (parseZuluDate(tmin.getTime()) < timeLimit) tmin = new Date(timeLimit);
 		var dmin=tmin.getDate(),dmax=tmax.getDate(),
 			mmin=months[tmin.getMonth()],mmax=months[tmax.getMonth()];
 
@@ -112,15 +114,15 @@ $().ready(function() {
 						xaxis: { mode: "time",
 					  			 timeBase: "milliseconds",
 								 timeformat: "%H:%M",
-								 axisLabel: "Timespan: " + getTimeSpan(feed,"created_at")
+								 axisLabel: "Timespan: " + getTimeSpan(feed,"created_at",limit)
 								},
 						yaxes: [{axisLabel:"Voltage (V)"}, {axisLabel:"Current (A)", position: "right"} ]		
 						});
 		decorate($plot,$placeholder,markings);
 	}
-	//makePlot(testFeed);
+	// makePlot(testFeed);
 	
-	$.when(getFeed('https://api.thingspeak.com/channels/1095413/feeds.json?results=200')).done(function(value) {
+	$.when(getFeed('https://api.thingspeak.com/channels/1095413/feeds.json?results=300')).done(function(value) {
     makePlot(value);
 	});
 	
@@ -134,6 +136,12 @@ $().ready(function() {
 	</div>
    
    	<div id="content">
+		<table class="summary">
+			<tr><td>Current state:&nbsp;<span id="current-state"></span></td><td align="right">Total yield: </td></tr>
+			<tr><td>Solar Voltage: </td> <td align="right">Solar Current: </td></tr>
+			<tr><td>Battery Voltage:&nbsp;<span id="current-battery-voltage"></span> </td> <td align="right">Battery Current: </td></tr>
+			<tr><td>Temperature: </td> <td align="right">Last entry: </td></tr>
+		</table>   
 		<div class="demo-container">
 			<div id="placeholder" class="demo-placeholder"></div>
 		</div>
