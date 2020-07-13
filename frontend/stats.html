@@ -19,6 +19,7 @@
 
 <script>
 $().ready(function() {
+	var now = new Date(), tz = now.getTimezoneOffset();
 	function getFeed(url){
 		// get the ve.direct feed 
 		var deferred = $.Deferred();
@@ -30,11 +31,14 @@ $().ready(function() {
 		});
 		return deferred.promise();
 	}
+	function parseZuluDate(d){
+		return (new Date(d)).getTime() - (tz*60*1000);
+	}
 
 	function parseSerie(data, x, y, scale,timeLimit){
-		var d=[], now=new Date(),xdt;
+		var d=[],xdt;
 		$.each(data.feeds, function( index, value ) {
-			xdt=new Date(value[x]).getTime();
+			xdt= parseZuluDate(value[x]);
 			if (xdt > timeLimit) {
 				d.push([xdt,value[y]/scale]);
 			}	
@@ -47,11 +51,11 @@ $().ready(function() {
 			colors=["#f6f6f6","#f6f6f6","#eb3434","lightblue","#FFD995","lightgreen"],
 			markings=[];
 		$.each(data.feeds, function( index, value ) {
-			dc = new Date(value[x]).getTime();
+			dc = parseZuluDate(value[x]);
 			vc = value[y];
 			
 			if (index==0){
-			 d = new Date(value[x]).getTime();
+			 d = parseZuluDate(value[x]);
 			 v = value[y];
 			}
 			if (v != vc){
@@ -70,7 +74,7 @@ $().ready(function() {
 		
 		$.each(markings, function(index, m){
 			if (!m.xaxis.to || !m.xaxis.from) return;  // dont bother to write for unceratin values
-			if ((m.xaxis.to - m.xaxis.from) < 1200000) return; // dont bother writing labels for short intervals
+			if ((m.xaxis.to - m.xaxis.from) < 5*60*1000) return; // dont bother writing labels for short intervals
 			var o = $plot.pointOffset({x:m.xaxis.from,y:yoffs});
 			$placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + o.top + "px;color:#666;font-size:smaller'>"+labels[m.cs]+"</div>");
 		});
@@ -97,7 +101,7 @@ $().ready(function() {
 	
 	function makePlot(feed){
 		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot,
-		limit=(new Date()).getTime()-(36*60*60*1000);
+		limit=(now.getTime()-(36*60*60*1000));
 		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000,limit)});
 		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000,limit)});	
 		markings = parseMarkings(feed,"created_at","field3");
