@@ -105,7 +105,9 @@ $().ready(function() {
 		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot,
 		limit=(now.getTime()-(36*60*60*1000));
 		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000,limit)});
-		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000,limit)});	
+		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000,limit)});
+		dataSeries.push({label:"PV", color:"BLUE",yaxis:1, data:parseSerie(feed,"created_at","field4",1000,limit)});
+			
 		markings = parseMarkings(feed,"created_at","field3");
 
 		$plot = $.plot($placeholder, dataSeries, 
