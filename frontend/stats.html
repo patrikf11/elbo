@@ -132,13 +132,14 @@ $().ready(function() {
 						yaxes: [{axisLabel:"Voltage (V)"}, {axisLabel:"Current (A)", position: "right"} ]		
 						});
 		decorate($plot,$placeholder,markings);
+		$("#yield-total").text(yieldTotal);
+	
 	}
 	// makePlot(testFeed);
 	
 	$.when(getFeed('https://api.thingspeak.com/channels/1095413/feeds.json?results=300')).done(function(value) {
     makePlot(value);
 	});
-	$("#yield-total").text(yieldTotal);
 	//$("#yield-today").text(yieldToday);
 	$("#footer").prepend("Powered by ESP8266 <br> Thingspeak <br> GitHub Pages <br> Flot " + $.plot.version);				
 });	
