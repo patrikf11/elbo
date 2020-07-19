@@ -46,6 +46,14 @@ $().ready(function() {
 		return d.slice();
 	}
 
+	function getlastValue(data, x, y, scale){
+		var d=data.feeds;
+		if (d){
+			return (d[d.length-1][y]/scale);			
+		}
+		return "-";
+	}
+
 	function parseMarkings(data,x,y){
 		var dc,vc,d,v,
 			colors=["#f6f6f6","#f6f6f6","#eb3434","lightblue","#FFD995","lightgreen"],
@@ -109,6 +117,9 @@ $().ready(function() {
 		dataSeries.push({label:"PV", color:"BLUE",yaxis:1, data:parseSerie(feed,"created_at","field4",1000,limit)});
 			
 		markings = parseMarkings(feed,"created_at","field3");
+		var yieldTotal= getlastValue(feed,"created_at", "field7",100),
+		    yieldToday= getlastValue(feed,"created_at", "field6",100);					
+
 
 		$plot = $.plot($placeholder, dataSeries, 
 					   {series:{lines:{lineWidth:3}},
@@ -127,7 +138,8 @@ $().ready(function() {
 	$.when(getFeed('https://api.thingspeak.com/channels/1095413/feeds.json?results=300')).done(function(value) {
     makePlot(value);
 	});
-	
+	$("#yield-total").text(yieldTotal);
+	//$("#yield-today").text(yieldToday);
 	$("#footer").prepend("Powered by ESP8266 <br> Thingspeak <br> GitHub Pages <br> Flot " + $.plot.version);				
 });	
 </script>
@@ -139,7 +151,7 @@ $().ready(function() {
    
    	<div id="content">
 		<table class="summary">
-			<tr><td>Current state:&nbsp;<span id="current-state"></span></td><td align="right">Total yield: </td></tr>
+			<tr><td>Current state:&nbsp;<span id="current-state"></span></td><td align="right">Total yield: </td><span id="yield-total"></span></tr>
 			<tr><td>Solar Voltage: </td> <td align="right">Solar Current: </td></tr>
 			<tr><td>Battery Voltage:&nbsp;<span id="current-battery-voltage"></span> </td> <td align="right">Battery Current: </td></tr>
 			<tr><td>Temperature: </td> <td align="right">Last entry: </td></tr>
