@@ -35,13 +35,15 @@ $().ready(function() {
 		return (new Date(d)).getTime() - (tz*60*1000);
 	}
 
-	function parseSerie(data, x, y, scale,timeLimit){
+	function parseSerie(data, x, y, scale,timeLimit,lastValues){
 		var d=[],xdt;
+		
 		$.each(data.feeds, function( index, value ) {
 			xdt= parseZuluDate(value[x]);
 			if (xdt > timeLimit) {
 				d.push([xdt,value[y]/scale]);
-			}	
+				lastValues[y]=[xdt,value[y]/scale];
+			}
 		});
 		return d.slice();
 	}
@@ -75,18 +77,30 @@ $().ready(function() {
 		return markings;
 	}
 
-	function decorate($plot, $placeholder, markings){
+	function decorate($plot, $placeholder, markings, yieldTotal,yieldToday,temp,lastValues,PPV){
 		var labels=["Off","Off","Err","Bulk","Abs","Float"],cs,
-		yoffs = $plot.getAxes().yaxis.datamin;
+		yoffs = $plot.getAxes().yaxis.datamin, now = (new Date()).getTime(),
+		lastMarking;
 		
 		$.each(markings, function(index, m){
-			if (!m.xaxis.to || !m.xaxis.from) return;  // dont bother to write for unceratin values
-			if ((m.xaxis.to - m.xaxis.from) < 5*60*1000) return; // dont bother writing labels for short intervals
+			lastMarking=m;
+			if (!m.xaxis.from) return;  // dont bother to write for unceratin values
+			if (!m.xaxis.to && (now-m.xaxis.from) < 25*60*1000 ) return;
+			if ((m.xaxis.to - m.xaxis.from) < 25*60*1000) return; // dont bother writing labels for short intervals
 			var o = $plot.pointOffset({x:m.xaxis.from,y:yoffs});
-			$placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + o.top + "px;color:#666;font-size:smaller'>"+labels[m.cs]+"</div>");
+			$placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:10px;color:#666;font-size:smaller'>"+labels[m.cs]+"</div>");
 		});
 
-		
+		$("#current-temp").text(temp);
+		$("#current-state").text(labels[lastMarking.cs]).parent().addClass("state-"+labels[lastMarking.cs]);
+		$("#current-battery-voltage").text(lastValues["field1"][1]).parent().addClass("b-voltage");
+		$("#current-battery-current").text(lastValues["field2"][1]).parent().addClass("b-current");
+		$("#current-solar-voltage").text(lastValues["field4"][1]).parent().addClass("s-voltage");
+		$("#yield").text(yieldTotal + " / " + yieldToday  );
+		$("#current-solar-power").text(PPV);
+		var lastLogDate = new Date(lastValues["field1"][0]);
+		$("#last-logdate").text(lastLogDate.toLocaleString());
+
 	}
 
 	function getTimeSpan(data,t,timeLimit){
@@ -111,14 +125,16 @@ $().ready(function() {
 	
 	function makePlot(feed){
 		var dataSeries =[],markings, $placeholder=$("#placeholder"), $plot,
-		limit=(now.getTime()-(36*60*60*1000));
-		dataSeries.push({label:"V", color:"BLACK",yaxis:1, data:parseSerie(feed,"created_at","field1",1000,limit)});
-		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000,limit)});
-		dataSeries.push({label:"PV", color:"BLUE",yaxis:1, data:parseSerie(feed,"created_at","field4",1000,limit)});
+		limit=(now.getTime()-(36*60*60*1000)), lastValues={};
+		dataSeries.push({label:"V", color:"#7b71bf",yaxis:1, data:parseSerie(feed,"created_at","field1",1000,limit,lastValues)});
+		dataSeries.push({label:"I", color:"RED",yaxis:2, data:parseSerie(feed,"created_at","field2",1000,limit,lastValues)});
+		dataSeries.push({label:"PV", color:"GREY",yaxis:1, data:parseSerie(feed,"created_at","field4",1000,limit,lastValues)});
 			
 		markings = parseMarkings(feed,"created_at","field3");
 		var yieldTotal= getlastValue(feed,"created_at", "field7",100),
-		    yieldToday= getlastValue(feed,"created_at", "field6",100);					
+		    yieldToday= getlastValue(feed,"created_at", "field6",100),
+			PPV=getlastValue(feed,"created_at", "field5",1),
+			temp=getlastValue(feed,"created_at", "field8",1);					
 
 
 		$plot = $.plot($placeholder, dataSeries, 
@@ -131,8 +147,9 @@ $().ready(function() {
 								},
 						yaxes: [{axisLabel:"Voltage (V)"}, {axisLabel:"Current (A)", position: "right"} ]		
 						});
-		decorate($plot,$placeholder,markings);
-		$("#yield-total").text(yieldTotal);
+		decorate($plot,$placeholder,markings, yieldTotal,yieldToday,temp,lastValues,PPV);
+		
+
 	
 	}
 	// makePlot(testFeed);
@@ -140,7 +157,6 @@ $().ready(function() {
 	$.when(getFeed('https://api.thingspeak.com/channels/1095413/feeds.json?results=300')).done(function(value) {
     makePlot(value);
 	});
-	//$("#yield-today").text(yieldToday);
 	$("#footer").prepend("Powered by ESP8266 <br> Thingspeak <br> GitHub Pages <br> Flot " + $.plot.version);				
 });	
 </script>
@@ -152,10 +168,21 @@ $().ready(function() {
    
    	<div id="content">
 		<table class="summary">
-			<tr><td>Current state:&nbsp;<span id="current-state"></span></td><td align="right">Total yield: </td><span id="yield-total"></span></tr>
-			<tr><td>Solar Voltage: </td> <td align="right">Solar Current: </td></tr>
-			<tr><td>Battery Voltage:&nbsp;<span id="current-battery-voltage"></span> </td> <td align="right">Battery Current: </td></tr>
-			<tr><td>Temperature: </td> <td align="right">Last entry: </td></tr>
+			<tr>
+				<td>Current state:&nbsp;<span id="current-state"></span></td>
+				<td align="right">Yield Total / Today: <span id="yield"> -/- </span>&nbsp;kWh</td>
+			</tr>
+			<tr>
+				<td>Solar Voltage:&nbsp;<span id="current-solar-voltage"> - </span>&nbsp;V</td>
+				<td align="right">Solar Power:&nbsp;<span id="current-solar-power"> - </span>&nbsp;W</td>
+			</tr>
+			<tr>
+				<td>Battery Voltage:&nbsp;<span id="current-battery-voltage"> - </span>&nbsp;V </td> 
+				<td align="right">Battery Current:&nbsp;<span id="current-battery-current"> - </span>&nbsp;A </td>
+			</tr>
+			<tr><td>Temperature: <span id="current-temp"> - </span>&deg;C</td> 
+				<td align="right">Last entry:&nbsp;<span id="last-logdate"> - </span></td>
+			</tr>
 		</table>   
 		<div class="demo-container">
 			<div id="placeholder" class="demo-placeholder"></div>

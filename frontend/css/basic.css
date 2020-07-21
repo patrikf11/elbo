@@ -155,3 +155,11 @@ input[type="radio"] {
 .tickLabel {
 	line-height: 1.1;
 }
+.state-Off   {color: #f6f6f6}
+.state-Err   {color: #eb3434}
+.state-Bulk  {color: lightblue}
+.state-Abs   {color : #FFD995}
+.state-Float {color:lightgreen}
+.b-voltage {color: #7b71bf}
+.s-voltage {color: grey}
+.b-current {color:red}
