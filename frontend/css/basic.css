@@ -25,6 +25,7 @@ p {
 }
 
 button {
+	border-radius: 12px;
 	font-size: 18px;
 	padding: 1px 7px;
 }
@@ -161,5 +162,9 @@ input[type="radio"] {
 .state-Abs   {color : #FFD995}
 .state-Float {color:lightgreen}
 .b-voltage {color: #7b71bf}
+.button-b-voltage{background-color: #7b71bf;}
 .s-voltage {color: grey}
+.button-s-voltage{background-color: grey;}
 .b-current {color:red}
+.button-current{background-color: red;}
+
