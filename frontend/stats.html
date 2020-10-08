@@ -16,13 +16,14 @@
 <script language="javascript" type="text/javascript" src="./js/jquery.flot.legend.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="./props.js"></script>	
-<script language="javascript" type="text/javascript" src="../feed.json"></script>	
+<!--script language="javascript" type="text/javascript" src="./preprocess/feeds.json"></script-->	
 
 <script>
 $().ready(function() {
 	var now = new Date(), tz = now.getTimezoneOffset(),
 	    timeLimit=(now.getTime()-(36*60*60*1000)),
 		fields = thingsSpeakProps.fields;
+
 
 	function getFeed(url){
 		// get the ve.direct feed 
@@ -71,7 +72,7 @@ $().ready(function() {
 
 	function parseMarkings(data,x,y){
 		var dc,vc,d,v,
-			colors=["#f6f6f6","#f6f6f6","#eb3434","lightblue","#FFD995","lightgreen"],
+			colors=Object.values(props.colors),
 			markings=[];
 		$.each(data.feeds, function( index, value ) {
 			dc = parseZuluDate(value[x]);
@@ -180,10 +181,55 @@ $().ready(function() {
 		$("#cost-per-kwh").prepend(Math.round(partsTotal/yieldTotal));
 
 	}
-	// makePlot(testFeed);
+	function parseHist(data){
+		var dsOff=[],dsBulk=[],dsAbs=[],dsFloat=[],dsMedian=[],
+			startIdx=data.length-29,dt;
+		$.each(data, function(idx,val){
+			dt=val.dt;
+			var minV=val.minV/1000,
+				div0=val.div0/1000,
+				div3=val.div3/1000,
+				div4=val.div4/1000,
+				div5=val.div5/1000;
+			if ( idx>startIdx && minV>5){	
+			dsOff.push([dt,minV,minV]);
+			if (div0 > minV) dsOff.push([dt,div0,minV]);
+			dsBulk.push([dt,div0,div0]);
+			if (div3 > div0) dsBulk.push([dt,div3,div0]);
+			dsAbs.push([dt,div3,div3]);
+			if (div4 > div3) dsAbs.push([dt,div4,div3]);
+			dsFloat.push([dt,div4,div4]);
+			if (div5 > div4) dsFloat.push([dt,div5,div4]);
+			dsMedian.push([dt+43000000,val.medianV/1000])
+			}
+		});
+		//return [{label:"Off", color:"GREY", data:dsOff},dsBulk,dsAbs,dsFloat];
+		barOpts={show: true, lineWidth:3, fill:true};
+		lineOpts={show: true,lineWidth:3, fill:false};
+		return [{label:"Off",data:dsOff, bars:barOpts},
+				{label:"Bulk",data:dsBulk,bars:barOpts},
+				{label:"Abs",data:dsAbs,bars:barOpts},
+				{label:"Float",data:dsFloat,bars:barOpts},
+				{label:"Median", data:dsMedian, lines: lineOpts}
+			]	
+	}
+	function makeHist(data){
+		var options = {
+			xaxis: {mode: "time",
+				 	timeBase: "milliseconds",
+			   		timeformat: "%m/%d",
+					axisLabel: "Timespan (Month/date)"
+				}, 
+			yaxis:{axisLabel:"Voltage (V)"}           
+		};
+	var p = $.plot($("#history"),data,options);
+	}
 	
 	$.when(getFeed(thingsSpeakProps.feedUrl)).done(function(value) {
-    makePlot(value);
+	makePlot(value);
+	});
+	when(getFeed("./preprocess/hist.json")).done(function(value) {
+		makeHist(parseHist(value));
 	});
 	
 	$("#footer").prepend("Powered by ESP8266 <br> Thingspeak <br> GitHub Pages <br> Flot " + $.plot.version);
@@ -215,10 +261,14 @@ $().ready(function() {
 				<td>Charge Current:&nbsp;<span id="current-battery-current"> - </span>&nbsp;A </td>
 				<td align="right">Last entry:&nbsp;<span id="last-logdate"> - </span></td>
 			</tr>
-		</table>   
+		</table>
+		<p class="text">Charge status</p>   
 		<div class="demo-container">
 			<div id="placeholder" class="demo-placeholder"></div>
 		</div>
+		<p class="text">Charge History</p>
+		<div class="demo-container">
+			<div id="history" class="demo-placeholder"></div>
 		<div>
 	</div>
 	<div style="text-align: center; display:none" id="opts">
@@ -229,6 +279,5 @@ $().ready(function() {
 		</span>
 	</div>
 	<div id="footer"></div>
-
 </body>
 </html>

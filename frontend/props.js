@@ -11,3 +11,15 @@ const thingsSpeakProps = {
     },
     feedUrl:"https://api.thingspeak.com/channels/1095413/feeds.json?results=10300"
 };
+
+const props={
+    colors:{
+        OFF:"#f6f6f6",
+        OFF1:"#f6f6f6",
+        ERR:"#eb3434",
+        BULK:"lightblue",
+        ABS:"#FFD995",
+        FLOAT:"lightgreen"
+    },
+};
+

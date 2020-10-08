@@ -65,6 +65,7 @@ input[type=checkbox] {
 	font-size: 16px;
 	color: #999;
 }
+.text {padding: 1px 15px 1px 15px; color: #999;}
 #footer {
 	margin-top: 25px;
 	margin-bottom: 10px;
