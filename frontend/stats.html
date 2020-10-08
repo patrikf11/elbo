@@ -228,7 +228,7 @@ $().ready(function() {
 	$.when(getFeed(thingsSpeakProps.feedUrl)).done(function(value) {
 	makePlot(value);
 	});
-	when(getFeed("./preprocess/hist.json")).done(function(value) {
+	$.when(getFeed("./preprocess/hist.json")).done(function(value) {
 		makeHist(parseHist(value));
 	});
 	
