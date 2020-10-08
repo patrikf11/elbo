@@ -96,5 +96,3 @@ with open('hist.json', 'w') as outfile:
 outfile.close()    
 
 git_push_hist()
-# for local testing
-#os.system("cat hist.json | sed 's/^/var feeds=/' > feeds.json") 
