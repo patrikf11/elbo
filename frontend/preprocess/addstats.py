@@ -25,7 +25,8 @@ def getLastRunDate(dt):
             else:
                 return False
     except FileNotFoundError:
-        return False
+        return True
+
 
 def git_push_hist():
     try: 
