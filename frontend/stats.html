@@ -205,7 +205,7 @@ $().ready(function() {
 	});
 	
 	$.when(getFeed(thingsSpeakProps.histUrl)).done(function(value) {
-		makeHist(parseHist(value));
+		makeHist(parseHist(value, props));
 	});
 	/* local testing
 	makePlot(feeds);
