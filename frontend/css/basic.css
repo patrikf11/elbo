@@ -157,7 +157,7 @@ input[type="radio"] {
 .tickLabel {
 	line-height: 1.1;
 }
-.state-Off   {color: #f6f6f6}
+.state-Off   {color: #dcdcdc}
 .state-Err   {color: #eb3434}
 .state-Bulk  {color: lightblue}
 .state-Abs   {color : #FFD995}

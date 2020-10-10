@@ -5,18 +5,6 @@ Reading VE.direct textprotocol with a ESP8266 and using Thingspeak for datastora
 Visualize the data with some graphs.
 
 ## Demo
-Render a nice "live" [production graph](./frontend/stats.html) using tingsspeak as datasource. 
+Render a nice "live" [production graph](./frontend/stats.html) using thingspeak as datasource. 
 
 ## ESP8266 logger
-
-
-
-
-
-
-
-
-
-
-
-

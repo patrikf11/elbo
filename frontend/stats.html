@@ -1,7 +1,7 @@
 <html>
 <header>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>ELbo work in progress...</title>
+<title>ELbo solar production</title>
 <link href="./css/basic.css" rel="stylesheet" type="text/css">
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.canvaswrapper.min.js"></script>
@@ -15,8 +15,11 @@
 <script language="javascript" type="text/javascript" src="./js/jquery.flot.axislabels.min.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.flot.legend.min.js"></script>
 
+<script language="javascript" type="text/javascript" src="./js/elbo.colorhelper.js"></script>
+<script language="javascript" type="text/javascript" src="./js/elbo.parsers.js"></script>
+
 <script language="javascript" type="text/javascript" src="./props.js"></script>	
-<!--script language="javascript" type="text/javascript" src="./preprocess/feeds.json"></script-->	
+<!--script language="javascript" type="text/javascript" src="./local/testdata.js"></script-->	
 
 <script>
 $().ready(function() {
@@ -92,13 +95,16 @@ $().ready(function() {
 	}
 
 	function decorate($plot, $placeholder, markings, yieldTotal,yieldToday,stats){
-		var labels=["Off","Off","Err","Bulk","Abs","Float"],cs,
-		yoffs = $plot.getAxes().yaxis.datamin, now = (new Date()).getTime(),
-		lastMarking;
+		var LABEL=props.labels,
+			labels=[LABEL.OFF,LABEL.OFF,LABEL.ERR,LABEL.BULK,LABEL.ABS,LABEL.FLOAT],cs,
+			yoffs = $plot.getAxes().yaxis.datamin, now = (new Date()).getTime(),
+			xmin =	$plot.getAxes().xaxis.datamin,
+			lastMarking;
 		
 		$.each(markings, function(index, m){
 			lastMarking=m;
 			if (!m.xaxis.from) return;  // dont bother to write for unceratin values
+			if (xmin > m.xaxis.from) return;  // dont bother to write outside chart
 			if (!m.xaxis.to && (now-m.xaxis.from) < 25*60*1000 ) return;
 			if ((m.xaxis.to - m.xaxis.from) < 40*60*1000) return; // dont bother writing labels for short intervals
 			var o = $plot.pointOffset({x:m.xaxis.from,y:yoffs});
@@ -181,38 +187,7 @@ $().ready(function() {
 		$("#cost-per-kwh").prepend(Math.round(partsTotal/yieldTotal));
 
 	}
-	function parseHist(data){
-		var dsOff=[],dsBulk=[],dsAbs=[],dsFloat=[],dsMedian=[],
-			startIdx=data.length-29,dt;
-		$.each(data, function(idx,val){
-			dt=val.dt;
-			var minV=val.minV/1000,
-				div0=val.div0/1000,
-				div3=val.div3/1000,
-				div4=val.div4/1000,
-				div5=val.div5/1000;
-			if ( idx>startIdx && minV>5){	
-			dsOff.push([dt,minV,minV]);
-			if (div0 > minV) dsOff.push([dt,div0,minV]);
-			dsBulk.push([dt,div0,div0]);
-			if (div3 > div0) dsBulk.push([dt,div3,div0]);
-			dsAbs.push([dt,div3,div3]);
-			if (div4 > div3) dsAbs.push([dt,div4,div3]);
-			dsFloat.push([dt,div4,div4]);
-			if (div5 > div4) dsFloat.push([dt,div5,div4]);
-			dsMedian.push([dt+43000000,val.medianV/1000])
-			}
-		});
-		//return [{label:"Off", color:"GREY", data:dsOff},dsBulk,dsAbs,dsFloat];
-		barOpts={show: true, lineWidth:3, fill:true};
-		lineOpts={show: true,lineWidth:3, fill:false};
-		return [{label:"Off",data:dsOff, bars:barOpts},
-				{label:"Bulk",data:dsBulk,bars:barOpts},
-				{label:"Abs",data:dsAbs,bars:barOpts},
-				{label:"Float",data:dsFloat,bars:barOpts},
-				{label:"Median", data:dsMedian, lines: lineOpts}
-			]	
-	}
+
 	function makeHist(data){
 		var options = {
 			xaxis: {mode: "time",
@@ -228,10 +203,14 @@ $().ready(function() {
 	$.when(getFeed(thingsSpeakProps.feedUrl)).done(function(value) {
 	makePlot(value);
 	});
-	$.when(getFeed("./preprocess/hist.json")).done(function(value) {
+	
+	$.when(getFeed(thingsSpeakProps.histUrl)).done(function(value) {
 		makeHist(parseHist(value));
 	});
-	
+	/* local testing
+	makePlot(feeds);
+	makeHist(parseHist(hists,props));
+	*/
 	$("#footer").prepend("Powered by ESP8266 <br> Thingspeak <br> GitHub Pages <br> Flot " + $.plot.version);
 	
 	
