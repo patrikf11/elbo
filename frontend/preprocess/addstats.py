@@ -35,8 +35,9 @@ def git_push_hist():
         cmd.run("git push -u origin master -f", check=True, shell=True)
         print("hist refreshed")
         return True
-    except:
+    except Exception as e:
         print("computer says no")
+        print(e)
         return False
 
 def loadHist(fileName):
@@ -50,7 +51,7 @@ def loadHist(fileName):
         for p in data:
             if  p['dt'] > lastFulldt:
                 continue
-            print('h',p['dt'])
+            #print('h',p['dt'])
             result.append({"dt":p['dt'],"minV":p['minV'],"maxV":p['maxV'],
                            "medianV":p['medianV'],"div0":p['div0'],"div3":p['div3'],
                            "div4":p['div4'],"div5":p['div5'],"yieldToday":p['yieldToday']})
